@@ -9,10 +9,68 @@ procedure CalculateSpiral(const ImageData : TImageData; const Options : TSpiralO
 procedure DrawSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
 procedure DrawMonochrom(Bitmap : TBitmap; ImageData : TImageData);
 
+procedure CalcSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
+procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
+function RealMod(x, y : extended) : extended;
+
 implementation
 
 uses
    Types, Math;
+
+
+function RealMod(x, y : extended) : extended;
+begin
+   Result := x - (Trunc(x / y) * y);
+end;
+
+procedure CalcSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+begin
+   CalcSpiralShape(ImageData.Width, ImageData.Height, Options, Spiral);
+end;
+
+procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+var
+   Center : TGPPointF;
+   Radius, MaxRadius : double;
+   Angle : double;
+
+   circum : double;
+   stepAngle : double;
+   stepRadius : double;
+
+   Pnt : TGPPointF;
+   Matrix : IGPMatrix;
+   Index : Integer;
+begin
+   Index := 0;
+   SetLength(Spiral, Options.PointCount);
+
+   Angle := 0;
+   Radius := 1;
+   MaxRadius := Min(Width, Height) / 2;
+   Center := TGPPointF.Create(Width / 2, Height / 2);
+
+   while (Radius < MaxRadius) and (Index < Options.PointCount) do begin
+      Matrix := TGPMatrix.Create;
+      Matrix.Scale(Radius, Radius);
+      Matrix.Rotate(Angle);
+      Pnt := TGPPointF.Create(0, 1);
+      Matrix.TransformPoint(Pnt);
+      Pnt.X := Pnt.X + Center.X;
+      Pnt.Y := Pnt.Y + Center.Y;
+      Spiral[Index] := Pnt;
+      Inc(Index);
+
+      circum := 2*Pi*Radius;
+      stepAngle := Realmod(360 * Options.CircleStep / circum, 360);
+      stepRadius := Options.SpacingStep * stepAngle / 360;
+
+      Angle := Angle + stepAngle;
+      Radius := Radius + stepRadius;
+   end;
+   SetLength(Spiral, Index);
+end;
 
 procedure CalculateSpiral(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
 var
@@ -48,11 +106,6 @@ begin
    Center := TGPPointF.Create(ImageData.Width / 2, ImageData.Height / 2);
 
    while (Radius < MaxRadius) and (Index < Options.PointCount) do begin
-      circum := 2*Pi*Radius;
-      stepAngle := 360 * Options.CircleStep / circum;
-      stepRadius := Options.RadiusStep / radius;
-
-
       MatrixTmp := TGPMatrix.Create;
       MatrixTmp.Scale(Radius, Radius);
       MatrixTmp.Rotate(Angle);
@@ -67,8 +120,6 @@ begin
          DELTA_R := (255 - Brightness)/255 * Options.DeltaSize * Factor;
          Factor := -Factor;
 
-         //DELTA_R := Random(400) / 100;
-
          Matrix := TGPMatrix.Create;
          Matrix.Scale(Radius + DELTA_R, Radius + DELTA_R);
          Matrix.Rotate(Angle);
@@ -80,6 +131,10 @@ begin
          Spiral[Index] := Pnt;
          Inc(Index);
       end;
+
+      circum := 2*Pi*Radius;
+      stepAngle := Realmod(360 * Options.CircleStep / circum, 360);
+      stepRadius := Options.SpacingStep * stepAngle / 360;
 
       Angle := Angle + stepAngle;
       Radius := Radius + stepRadius;
@@ -104,13 +159,15 @@ begin
       Bitmap.SetSize(ImageData.Width, ImageData.Height);
 
       Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
-      Img.SmoothingMode := SmoothingModeAntiAlias8x8;
+
+      Img.SmoothingMode := Options.SmoothingMode;
 
       Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 20);
       Pen.SetLineCap(LineCapSquare, LineCapArrowAnchor, DashCapTriangle);
       Pen.LineJoin := LineJoinRound;
 
       CalculateSpiral(ImageData, Options, SpiralPoints);
+//      CalcSpiralShape(ImageData, Options, SpiralPoints);
 
       Pen := TGPPen.Create(TGPColor.Create(30, 30, 30), 1);
       Img.DrawLines(Pen, SpiralPoints);

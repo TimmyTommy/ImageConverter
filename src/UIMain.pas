@@ -25,15 +25,19 @@ type
     TabControl: TTabControl;
     Image: TImage;
     ScrollBox: TScrollBox;
-    TrackBarStepRadius: TTrackBar;
+    TrackBarStepSpacing: TTrackBar;
     TrackBarStepCircle: TTrackBar;
     SpinEditPointCount: TSpinEdit;
-    LabelStepRadius: TLabel;
-    LabelCircleStep: TLabel;
+    LabelStepSpacing: TLabel;
+    LabelLineStep: TLabel;
     LabelPointCount: TLabel;
     TrackBarDeltaSize: TTrackBar;
     LabelDeltaSize: TLabel;
     ButtonSaveImage: TButton;
+    LabelSpacingStepDisplay: TLabel;
+    LabelLineStepDisplay: TLabel;
+    LabelDeltaSizeDisplay: TLabel;
+    ComboBoxSmoothing: TComboBox;
     procedure BtnLoadImgClick(Sender: TObject);
     procedure ImageMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
@@ -51,6 +55,8 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ButtonSaveImageClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure TrackBarChange(Sender: TObject);
+    procedure ComboBoxSmoothingChange(Sender: TObject);
   private
     { Private declarations }
     FImageData : TImageData;
@@ -60,6 +66,8 @@ type
     FStartMovePoint : TPoint;
 
     procedure RefreshImage;
+    procedure RefreshValuesDisplay;
+    procedure PopulateComboboxSmoothing;
     function GetSpiralOptions : TSpiralOptions;
   public
     { Public declarations }
@@ -146,6 +154,11 @@ begin
    end;
 end;
 
+procedure TMainForm.ComboBoxSmoothingChange(Sender: TObject);
+begin
+//
+end;
+
 procedure TMainForm.ButtonGenerateClick(Sender: TObject);
 var
    Bitmap : TBitmap;
@@ -173,6 +186,7 @@ begin
    FSourceGraphic := TBitmap.Create;
    FGraphicList := TObjectList<TGraphic>.Create;
    FGraphicList.Add(FSourceGraphic);
+   PopulateComboboxSmoothing;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -206,14 +220,16 @@ begin
    Img.Clear(TGPColor.White);
    FSourceGraphic.Assign(Image.Picture.Bitmap);
    FImageData.LoadFromBitmap(FSourceGraphic);
+   RefreshValuesDisplay;
 end;
 
 function TMainForm.GetSpiralOptions: TSpiralOptions;
 begin
    Result.CircleStep := TrackBarStepCircle.Position / 10 + 0.5;
-   Result.RadiusStep := TrackBarStepRadius.Position / 1000;
+   Result.SpacingStep := TrackBarStepSpacing.Position / 1000;
    Result.DeltaSize  := TrackBarDeltaSize.Position / 10;
    Result.PointCount := SpinEditPointCount.Value;
+   Result.SmoothingMode := TGPSmoothingMode(ComboBoxSmoothing.Items.Objects[ComboBoxSmoothing.ItemIndex]);
 end;
 
 procedure TMainForm.ImageMouseDown(Sender: TObject; Button: TMouseButton;
@@ -252,11 +268,36 @@ begin
    Image.Cursor := crDefault;
 end;
 
+procedure TMainForm.PopulateComboboxSmoothing;
+begin
+   ComboBoxSmoothing.Clear;
+   ComboBoxSmoothing.AddItem('QualityModeDefault', TObject(QualityModeDefault));
+   ComboBoxSmoothing.AddItem('QualityModeLow', TObject(QualityModeLow));
+   ComboBoxSmoothing.AddItem('QualityModeHigh', TObject(QualityModeHigh));
+   ComboBoxSmoothing.AddItem('SmoothingModeNone', TObject(SmoothingModeNone));
+   ComboBoxSmoothing.AddItem('SmoothingModeAntiAlias', TObject(SmoothingModeAntiAlias));
+   {$IF (GDIPVER >= $0110)}
+   ComboBoxSmoothing.AddItem('SmoothingModeAntiAlias8x4', TObject(SmoothingModeAntiAlias8x4));
+   ComboBoxSmoothing.AddItem('SmoothingModeAntiAlias8x8', TObject(SmoothingModeAntiAlias8x8));
+   {$IFEND}
+   ComboBoxSmoothing.ItemIndex := 4;
+end;
+
 procedure TMainForm.RefreshImage;
 begin
    Image.Picture.Bitmap.Assign(FGraphicList[TabControl.TabIndex]);
    ScrollBox.HorzScrollBar.Range := Image.Width;
    ScrollBox.VertScrollBar.Range := Image.Height;
+end;
+
+procedure TMainForm.RefreshValuesDisplay;
+var
+   SpiralOptions : TSpiralOptions;
+begin
+   SpiralOptions := GetSpiralOptions;
+   LabelSpacingStepDisplay.Caption := Format('%.3f', [SpiralOptions.SpacingStep]);
+   LabelLineStepDisplay.Caption := Format('%.2f', [SpiralOptions.CircleStep]);
+   LabelDeltaSizeDisplay.Caption := Format('%.2f', [SpiralOptions.DeltaSize]);
 end;
 
 procedure TMainForm.TabControlChange(Sender: TObject);
@@ -287,6 +328,11 @@ begin
          end;
       end;
    end;
+end;
+
+procedure TMainForm.TrackBarChange(Sender: TObject);
+begin
+   RefreshValuesDisplay;
 end;
 
 end.

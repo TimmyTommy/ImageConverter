@@ -24,7 +24,6 @@ object MainForm: TMainForm
     Height = 68
     Align = alBottom
     TabOrder = 0
-    ExplicitTop = 497
     object LabelOut: TLabel
       Left = 90
       Top = 42
@@ -32,29 +31,50 @@ object MainForm: TMainForm
       Height = 13
       Caption = 'LabelOut'
     end
-    object LabelStepRadius: TLabel
+    object LabelStepSpacing: TLabel
       Left = 312
       Top = 10
-      Width = 57
+      Width = 59
       Height = 13
-      Caption = 'Radius Step'
+      Caption = 'Line Spacing'
     end
-    object LabelCircleStep: TLabel
+    object LabelLineStep: TLabel
       Left = 312
       Top = 39
-      Width = 51
+      Width = 44
       Height = 13
-      Caption = 'Circle Step'
+      Caption = 'Line Step'
     end
     object LabelPointCount: TLabel
-      Left = 560
+      Left = 617
       Top = 39
-      Width = 56
+      Width = 52
       Height = 13
-      Caption = 'Point Count'
+      Caption = 'Max Points'
     end
     object LabelDeltaSize: TLabel
-      Left = 560
+      Left = 617
+      Top = 10
+      Width = 48
+      Height = 13
+      Caption = 'Max Delta'
+    end
+    object LabelSpacingStepDisplay: TLabel
+      Left = 527
+      Top = 10
+      Width = 54
+      Height = 13
+      Caption = 'RadiusStep'
+    end
+    object LabelLineStepDisplay: TLabel
+      Left = 527
+      Top = 39
+      Width = 41
+      Height = 13
+      Caption = 'LineStep'
+    end
+    object LabelDeltaSizeDisplay: TLabel
+      Left = 840
       Top = 10
       Width = 44
       Height = 13
@@ -78,48 +98,51 @@ object MainForm: TMainForm
       TabOrder = 1
       OnClick = ButtonGenerateClick
     end
-    object TrackBarStepRadius: TTrackBar
+    object TrackBarStepSpacing: TTrackBar
       Left = 375
       Top = 6
       Width = 150
       Height = 27
-      Max = 5000
+      Max = 20000
       Min = 1
-      Position = 800
+      Position = 5000
       ShowSelRange = False
       TabOrder = 2
       TickStyle = tsNone
+      OnChange = TrackBarChange
     end
     object TrackBarStepCircle: TTrackBar
       Left = 375
       Top = 35
       Width = 150
       Height = 26
-      Max = 30
-      Position = 4
+      Max = 500
+      Position = 5
       ShowSelRange = False
       TabOrder = 3
+      OnChange = TrackBarChange
     end
     object SpinEditPointCount: TSpinEdit
-      Left = 631
+      Left = 688
       Top = 36
       Width = 89
       Height = 22
       Increment = 1000
-      MaxValue = 1000000
+      MaxValue = 5000000
       MinValue = 0
       TabOrder = 4
       Value = 300000
     end
     object TrackBarDeltaSize: TTrackBar
-      Left = 631
+      Left = 688
       Top = 6
       Width = 150
       Height = 26
-      Max = 30
+      Max = 200
       Position = 18
       ShowSelRange = False
       TabOrder = 5
+      OnChange = TrackBarChange
     end
     object ButtonSaveImage: TButton
       Left = 9
@@ -129,6 +152,15 @@ object MainForm: TMainForm
       Caption = 'Save Image'
       TabOrder = 6
       OnClick = ButtonSaveImageClick
+    end
+    object ComboBoxSmoothing: TComboBox
+      Left = 783
+      Top = 36
+      Width = 162
+      Height = 21
+      Style = csDropDownList
+      TabOrder = 7
+      OnChange = ComboBoxSmoothingChange
     end
   end
   object TabControl: TTabControl
