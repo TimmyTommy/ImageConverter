@@ -29,6 +29,18 @@ begin
    CalcSpiralShape(ImageData.Width, ImageData.Height, Options, Spiral);
 end;
 
+function CalcAngleBisector(const Vec1, Vec2 : TGpPointF) : TGpPointF;
+var
+   angle : double;
+   a1, a2 : double;
+begin
+   a1 := ArcTan2(Vec1.Y, Vec1.X);
+   a2 := ArcTan2(Vec2.Y, Vec2.X);
+   angle := a1-a2;
+   //angle := ArcTan2(Vec2.Y, Vec2.X)- ArcTan2(Vec1.Y, Vec1.X);
+   SinCos(angle, Result.Y, Result.X);
+end;
+
 procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF);
 var
    Center : TGPPointF;
@@ -42,6 +54,9 @@ var
    Pnt : TGPPointF;
    Matrix : IGPMatrix;
    Index : Integer;
+   Normal : TGPPointF;
+   LastPnt : TGPPointF;
+   LastLastPnt : TGPPointF;
 begin
    Index := 0;
    SetLength(Spiral, Options.PointCount);
@@ -52,13 +67,45 @@ begin
    Center := TGPPointF.Create(Width / 2, Height / 2);
 
    while (Radius < MaxRadius) and (Index < Options.PointCount) do begin
+      LastLastPnt := LastPnt;
+      LastPnt := Pnt;
+
       Matrix := TGPMatrix.Create;
       Matrix.Scale(Radius, Radius);
       Matrix.Rotate(Angle);
-      Pnt := TGPPointF.Create(0, 1);
+      Pnt := TGPPointF.Create(1, 0);
       Matrix.TransformPoint(Pnt);
+
       Pnt.X := Pnt.X + Center.X;
       Pnt.Y := Pnt.Y + Center.Y;
+
+//      if index > 2 then begin
+//
+////         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
+////         Normal := CalcAngleBisector(Pnt-LastPnt, LastLastPnt-LastPnt);
+//         Normal := CalcAngleBisector(Pnt-LastPnt, LastLastPnt-LastPnt);
+//
+//         Normal := Normal * Options.DeltaSize;
+//
+//         Spiral[Index] := LastPnt + Normal;
+//         Inc(Index);
+//
+//         Spiral[Index] := LastPnt;
+//         Inc(Index);
+//      end;
+
+      if index > 1 then begin
+         Spiral[Index] := Pnt;
+         Inc(Index);
+
+         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
+
+         Normal := Normal * Options.DeltaSize;
+
+         Spiral[Index] := Pnt + Normal;
+         Inc(Index);
+      end;
+
       Spiral[Index] := Pnt;
       Inc(Index);
 
@@ -100,7 +147,7 @@ begin
    SetLength(Spiral, Options.PointCount);
 
    Angle := 0;
-   Radius := 2;
+   Radius := 1;
    MaxRadius := Min(ImageData.Width, ImageData.Height) / 2;
 
    Center := TGPPointF.Create(ImageData.Width / 2, ImageData.Height / 2);
@@ -109,7 +156,7 @@ begin
       MatrixTmp := TGPMatrix.Create;
       MatrixTmp.Scale(Radius, Radius);
       MatrixTmp.Rotate(Angle);
-      Pnt := TGPPointF.Create(0, 1);
+      Pnt := TGPPointF.Create(1, 0);
       MatrixTmp.TransformPoint(Pnt);
       Pnt.X := Pnt.X + Center.X;
       Pnt.Y := Pnt.Y + Center.Y;
@@ -124,7 +171,7 @@ begin
          Matrix.Scale(Radius + DELTA_R, Radius + DELTA_R);
          Matrix.Rotate(Angle);
 
-         Pnt := TGPPointF.Create(0, 1);
+         Pnt := TGPPointF.Create(1, 0);
          Matrix.TransformPoint(Pnt);
          Pnt.X := Pnt.X + Center.X;
          Pnt.Y := Pnt.Y + Center.Y;

@@ -1,9 +1,9 @@
 object MainForm: TMainForm
-  Left = 0
-  Top = 0
+  Left = 411
+  Top = 77
   Caption = 'Image Converter'
-  ClientHeight = 625
-  ClientWidth = 974
+  ClientHeight = 810
+  ClientWidth = 1313
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,6 +11,7 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Position = poDesigned
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseWheel = FormMouseWheel
@@ -19,11 +20,13 @@ object MainForm: TMainForm
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
-    Top = 557
-    Width = 974
+    Top = 742
+    Width = 1313
     Height = 68
     Align = alBottom
     TabOrder = 0
+    ExplicitTop = 557
+    ExplicitWidth = 974
     object LabelOut: TLabel
       Left = 90
       Top = 42
@@ -166,8 +169,8 @@ object MainForm: TMainForm
   object TabControl: TTabControl
     Left = 0
     Top = 0
-    Width = 974
-    Height = 557
+    Width = 1313
+    Height = 742
     Align = alClient
     TabOrder = 1
     Tabs.Strings = (
@@ -175,11 +178,13 @@ object MainForm: TMainForm
     TabIndex = 0
     OnChange = TabControlChange
     OnMouseUp = TabControlMouseUp
+    ExplicitWidth = 974
+    ExplicitHeight = 557
     object ScrollBox: TScrollBox
       Left = 4
       Top = 24
-      Width = 966
-      Height = 529
+      Width = 1305
+      Height = 714
       Align = alClient
       BevelEdges = []
       BevelInner = bvNone
@@ -187,6 +192,8 @@ object MainForm: TMainForm
       DoubleBuffered = True
       ParentDoubleBuffered = False
       TabOrder = 0
+      ExplicitWidth = 966
+      ExplicitHeight = 529
       object Image: TImage
         Left = 3
         Top = 3

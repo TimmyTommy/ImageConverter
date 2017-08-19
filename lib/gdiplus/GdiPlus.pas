@@ -1449,6 +1449,8 @@ type
     class function Create(const AX, AY: Single): TGPPointF; overload; static;
     class operator Add(const A, B: TGPPointF): TGPPointF;
     class operator Subtract(const A, B: TGPPointF): TGPPointF;
+    class operator Multiply(const A: TGPPointF; const Scalar : Single): TGPPointF;
+    class operator Multiply(const Scalar : Single; const A: TGPPointF): TGPPointF;
     function Equals(const Point: TGPPointF): Boolean;
   end;
   PGPPointF = ^TGPPointF;
@@ -9891,6 +9893,16 @@ end;
 class operator TGPPoint.Add(const A, B: TGPPoint): TGPPoint;
 begin
   Result.Initialize(A.X + B.X, A.Y + B.Y);
+end;
+
+class operator TGPPointF.Multiply(const A: TGPPointF; const Scalar : Single): TGPPointF;
+begin
+  Result.Initialize(A.X * Scalar, A.Y * Scalar);
+end;
+
+class operator TGPPointF.Multiply(const Scalar : Single; const A: TGPPointF): TGPPointF;
+begin
+  Result.Initialize(A.X * Scalar, A.Y * Scalar);
 end;
 
 class function TGPPoint.Create(const Point: TGPPoint): TGPPoint;
