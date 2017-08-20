@@ -1,4 +1,4 @@
-unit ShapeTemplatePatterns;
+﻿unit ShapeTemplatePatterns;
 
 interface
 
@@ -29,16 +29,98 @@ begin
    CalcSpiralShape(ImageData.Width, ImageData.Height, Options, Spiral);
 end;
 
-function CalcAngleBisector(const Vec1, Vec2 : TGpPointF) : TGpPointF;
+function VecLength(Vec : TGpPointF) : Double;
+begin
+   Result := Sqrt(Sqr(Vec.X) + Sqr(Vec.Y));
+end;
+
+procedure NormalizeVec(var Vec : TGpPointF);
+begin
+   Vec := Vec * (1/VecLength(Vec));
+end;
+
+function VecDot(A, B : TGpPointF) :Double;
+begin
+  Result := A.X*B.X+A.Y*B.Y;
+end;
+
+function VecCross(A, B : TGpPointF) : double;
+begin
+  Result := A.X*B.Y-A.Y*B.X;
+end;
+
+//function GetAngle(A, B: TGpPointF) : Double;
+//begin
+//     // |A·B| = |A| |B| COS(θ)
+//     // |A×B| = |A| |B| SIN(θ)
+//
+//  Result := ArcTan2(VecCross(A,B), VecDot(A,B));
+//end;
+
+function GetAngle(A, B: TGpPointF) : Double;
+begin
+     // |A·B| = |A| |B| COS(θ)
+     // |A×B| = |A| |B| SIN(θ)
+
+  Result := ArcTan2(VecCross(A,B), VecDot(A,B));
+end;
+
+function CalcAngleBisector(Vec1, Vec2 : TGpPointF) : TGpPointF;
 var
    angle : double;
    a1, a2 : double;
+
+   Mat : IGPMatrix;
 begin
-   a1 := ArcTan2(Vec1.Y, Vec1.X);
-   a2 := ArcTan2(Vec2.Y, Vec2.X);
-   angle := a1-a2;
+   NormalizeVec(Vec1);
+   NormalizeVec(Vec2);   
+
+   Result := Vec1 + Vec2;
+   if VecLength(Result) < 1e-4 then begin
+      Result := Vec1;
+      Mat := TGPMatrix.Create;
+      Mat.Rotate(90);
+      Mat.TransformPoint(Result);
+   end else begin
+      NormalizeVec(Result);
+      angle := GetAngle(Vec1, Vec2);
+
+      angle := ArcTan2(Vec1.Y, Vec1.X) - ArcTan2(Vec2.Y, Vec2.X);
+      angle := angle * 360 / (2*pi);
+      if (angle < 0) then begin
+         angle := angle + 360;
+      end;
+      if Angle > 180 then begin
+         Result := Result * -1;
+      end;         
+   end;
+
+//   angle := ArcTan2(Vec1.Y, Vec1.X) - ArcTan2(Vec2.Y, Vec2.X);
+
+//   angle := Vec1.X*Vec2.X + Vec1.Y*Vec2.Y;
+//   angle := ArcCos(angle);
+//   a1 := ArcTan2(Vec1.Y, Vec1.X);
+//   a2 := ArcTan2(Vec2.Y, Vec2.X);
+//   angle := a2-a1;
+
+//   if Angle > Pi then begin
+//      Result := Result * -1;
+//   end;
+
+//
+//   SinCos(a1+angle, Result.Y, Result.X);
+
+//   Mat := TGPMatrix.Create;
+//   Mat.Rotate(angle*180/pi);
+// 
+//   Result := Vec2 * (1/Sqrt(Vec2.X*Vec2.X + Vec2.Y*Vec2.Y));
+//   Mat.TransformPoint(Result);
    //angle := ArcTan2(Vec2.Y, Vec2.X)- ArcTan2(Vec1.Y, Vec1.X);
-   SinCos(angle, Result.Y, Result.X);
+//   if a2<0 then begin
+//      SinCos(a1+angle, Result.Y, Result.X);
+//   end else begin
+//      SinCos(a2+angle, Result.Y, Result.X);
+//   end;
 end;
 
 procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF);
@@ -79,32 +161,32 @@ begin
       Pnt.X := Pnt.X + Center.X;
       Pnt.Y := Pnt.Y + Center.Y;
 
-//      if index > 2 then begin
-//
-////         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
-////         Normal := CalcAngleBisector(Pnt-LastPnt, LastLastPnt-LastPnt);
+      if index > 2 then begin
+
+//         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
 //         Normal := CalcAngleBisector(Pnt-LastPnt, LastLastPnt-LastPnt);
-//
-//         Normal := Normal * Options.DeltaSize;
-//
-//         Spiral[Index] := LastPnt + Normal;
-//         Inc(Index);
-//
-//         Spiral[Index] := LastPnt;
-//         Inc(Index);
-//      end;
-
-      if index > 1 then begin
-         Spiral[Index] := Pnt;
-         Inc(Index);
-
-         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
+         Normal := CalcAngleBisector(Pnt-LastPnt, LastLastPnt-LastPnt);
 
          Normal := Normal * Options.DeltaSize;
 
-         Spiral[Index] := Pnt + Normal;
+         Spiral[Index] := LastPnt + Normal;
+         Inc(Index);
+
+         Spiral[Index] := LastPnt;
          Inc(Index);
       end;
+
+//      if index > 1 then begin
+//         Spiral[Index] := Pnt;
+//         Inc(Index);
+//
+//         SinCos(Angle/180*Pi, Normal.Y, Normal.X);
+//
+//         Normal := Normal * Options.DeltaSize;
+//
+//         Spiral[Index] := Pnt + Normal;
+//         Inc(Index);
+//      end;
 
       Spiral[Index] := Pnt;
       Inc(Index);
