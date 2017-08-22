@@ -5,12 +5,27 @@ interface
 uses
    Windows, Graphics, ImageData, GdiPlus;
 
-procedure CalculateSpiral(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+type
+  TPointArrayF = array of TGPPointF;
+  TPointArrayArrayF = array of TPointArrayF;
+
+  TSpiralOptions = packed record
+     LineStep : Double;
+     SpacingStep : Double;
+     DeltaSize  : Double;
+     PointCount : Integer;
+     SmoothingMode : TGPSmoothingMode;
+  end;
+
 procedure DrawSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
 procedure DrawMonochrom(Bitmap : TBitmap; ImageData : TImageData);
 
+
+procedure ShapeToZigZag(var Shape : TPointArrayF; const ImageData : TImageData; const Delta : Double);
+procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Delta : Double);
 procedure CalcSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
-procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
+procedure CalcSpiralShape(const Diameter : Double; const Center : TGPPointF;
+   const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
 
 implementation
 
@@ -19,37 +34,33 @@ uses
 
 procedure CalcSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
 begin
-   CalcSpiralShape(ImageData.Width, ImageData.Height, Options, Spiral);
+   CalcSpiralShape(
+      Min(ImageData.Width, ImageData.Height),
+      TGPPointF.Create(ImageData.Width/2, ImageData.Height/2),
+      Options,
+      Spiral
+   );
 end;
 
-procedure CalcSpiralShape(const Width, Height : Integer; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+procedure CalcSpiralShape(const Diameter : Double; const Center : TGPPointF;
+   const Options : TSpiralOptions; var Spiral : TPointArrayF);
 var
-   Center : TGPPointF;
-   Radius, MaxRadius : double;
-   Angle : double;
-
-   circum : double;
-   stepAngle : double;
-   stepRadius : double;
+   Radius, Angle : double;
+   circum, stepAngle, stepRadius : double;
 
    Pnt : TGPPointF;
    Matrix : IGPMatrix;
    Index : Integer;
-   Normal : TGPPointF;
-   LastPnt : TGPPointF;
-   LastLastPnt : TGPPointF;
 begin
    Index := 0;
-   SetLength(Spiral, Options.PointCount);
-
+   SetLength(Spiral, 5000);
    Angle := 0;
    Radius := 1;
-   MaxRadius := Min(Width, Height) / 2;
-   Center := TGPPointF.Create(Width / 2, Height / 2);
 
-   while (Radius < MaxRadius) and (Index < Options.PointCount) do begin
-      LastLastPnt := LastPnt;
-      LastPnt := Pnt;
+   while Radius < Diameter / 2 do begin
+      if Index >= Length(Spiral) then begin
+         SetLength(Spiral, Length(Spiral)*2);
+      end;
 
       Matrix := TGPMatrix.Create;
       Matrix.Scale(Radius, Radius);
@@ -57,26 +68,11 @@ begin
       Pnt := TGPPointF.Create(1, 0);
       Matrix.TransformPoint(Pnt);
 
-      Pnt.X := Pnt.X + Center.X;
-      Pnt.Y := Pnt.Y + Center.Y;
-
-      if index > 2 then begin
-         Normal := CalcAngleBisector(LastLastPnt, LastPnt, Pnt);
-//         Normal := CalcAngleBisector(LastLastPnt-LastPnt, Pnt-LastPnt);
-         Normal := Normal * Options.DeltaSize;
-
-         Spiral[Index] := LastPnt + Normal;
-         Inc(Index);
-
-         Spiral[Index] := LastPnt;
-         Inc(Index);
-      end;
-
-      Spiral[Index] := Pnt;
+      Spiral[Index] := Pnt + Center;
       Inc(Index);
 
       circum := 2*Pi*Radius;
-      stepAngle := Realmod(360 * Options.CircleStep / circum, 360);
+      stepAngle := Realmod(360 * Options.LineStep / circum, 360);
       stepRadius := Options.SpacingStep * stepAngle / 360;
 
       Angle := Angle + stepAngle;
@@ -85,102 +81,62 @@ begin
    SetLength(Spiral, Index);
 end;
 
-procedure CalculateSpiral(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+procedure ShapeToZigZag(var Shape : TPointArrayF; const ImageData : TImageData; const Delta : Double);
 var
-   DELTA_R : Double;
-   Center : TGPPointF;
-   Radius, MaxRadius : double;
-   Angle : double;
-
-   circum : double;
-
-   stepAngle : double;
-   stepRadius : double;
-
-   Pnt : TGPPointF;
+   ZigZagOut : TPointArrayF;
+   i : Integer;
+   FlipFlop : Integer;
+   Normal : TGPPointF;
+   R : TRect;
+   Brightness : Double;
    X, Y : Integer;
-
-   Matrix : IGPMatrix;
-   MatrixTmp : IGPMatrix;
-   Index : Integer;
-
-   Brightness : Byte;
-   Factor : Integer;
-
 begin
-   Factor := 1;
-   Index := 0;
-   SetLength(Spiral, Options.PointCount);
-
-   Angle := 0;
-   Radius := 1;
-   MaxRadius := Min(ImageData.Width, ImageData.Height) / 2;
-
-   Center := TGPPointF.Create(ImageData.Width / 2, ImageData.Height / 2);
-
-   while (Radius < MaxRadius) and (Index < Options.PointCount) do begin
-      MatrixTmp := TGPMatrix.Create;
-      MatrixTmp.Scale(Radius, Radius);
-      MatrixTmp.Rotate(Angle);
-      Pnt := TGPPointF.Create(1, 0);
-      MatrixTmp.TransformPoint(Pnt);
-      Pnt.X := Pnt.X + Center.X;
-      Pnt.Y := Pnt.Y + Center.Y;
-      X := Round(Pnt.X);
-      Y := Round(Pnt.Y);
-      if PtInRect(Rect(0,0, Length(ImageData.BrightnessGrid[0]),Length(ImageData.BrightnessGrid)), Point(X, Y)) then begin
-         Brightness := ImageData.BrightnessGrid[Y, X];
-         DELTA_R := (255 - Brightness)/255 * Options.DeltaSize * Factor;
-         Factor := -Factor;
-
-         Matrix := TGPMatrix.Create;
-         Matrix.Scale(Radius + DELTA_R, Radius + DELTA_R);
-         Matrix.Rotate(Angle);
-
-         Pnt := TGPPointF.Create(1, 0);
-         Matrix.TransformPoint(Pnt);
-         Pnt.X := Pnt.X + Center.X;
-         Pnt.Y := Pnt.Y + Center.Y;
-         Spiral[Index] := Pnt;
-         Inc(Index);
+   FlipFlop := 1;
+   SetLength(ZigZagOut, Length(Shape));
+   ZigZagOut[0] := Shape[0];
+   ZigZagOut[High(Shape)] := Shape[High(Shape)];
+   R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
+   for i := Low(Shape)+1 to High(Shape)-1 do begin
+      X := Round(Shape[i].X);
+      Y := Round(Shape[i].Y);
+      if R.Contains(Point(X, Y)) then begin
+         Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
+      end else begin
+         Brightness := 0;
       end;
 
-      circum := 2*Pi*Radius;
-      stepAngle := Realmod(360 * Options.CircleStep / circum, 360);
-      stepRadius := Options.SpacingStep * stepAngle / 360;
-
-      Angle := Angle + stepAngle;
-      Radius := Radius + stepRadius;
+      Normal := CalcAngleBisector(Shape[i-1], Shape[i], Shape[i+1]);
+      Normal := Normal * (Delta * Brightness * FlipFlop);
+      FlipFlop := -FlipFlop;
+      ZigZagOut[i] := Shape[i] + Normal;
    end;
-   SetLength(Spiral, Index);
+   Shape := ZigZagOut;
+end;
+
+procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Delta : Double);
+var
+   i : Integer;
+begin
+   for i := Low(Shapes) to High(Shapes) do begin
+      ShapeToZigZag(Shapes[i], ImageData, Delta);
+   end;
 end;
 
 procedure DrawSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
 var
-   ColorGrid : TColorGrid;
-   BrightnessGrid : TByteGrid;
-
    Img : IGPGraphics;
    Pen : IGPPen;
    SpiralPoints : TPointArrayF;
 begin
    if Assigned(Bitmap) and Assigned(ImageData) then begin
-      ColorGrid := ImageData.ColorGrid;
-      BrightnessGrid := ImageData.BrightnessGrid;
-
       Bitmap.PixelFormat := pf32bit;
       Bitmap.SetSize(ImageData.Width, ImageData.Height);
 
       Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
-
       Img.SmoothingMode := Options.SmoothingMode;
 
-      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 20);
-      Pen.SetLineCap(LineCapSquare, LineCapArrowAnchor, DashCapTriangle);
-      Pen.LineJoin := LineJoinRound;
-
-      CalculateSpiral(ImageData, Options, SpiralPoints);
-//      CalcSpiralShape(ImageData, Options, SpiralPoints);
+      CalcSpiralShape(ImageData, Options, SpiralPoints);
+      ShapeToZigZag(SpiralPoints, ImageData, Options.DeltaSize);
 
       Pen := TGPPen.Create(TGPColor.Create(30, 30, 30), 1);
       Img.DrawLines(Pen, SpiralPoints);

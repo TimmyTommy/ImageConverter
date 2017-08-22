@@ -26,7 +26,7 @@ type
     Image: TImage;
     ScrollBox: TScrollBox;
     TrackBarStepSpacing: TTrackBar;
-    TrackBarStepCircle: TTrackBar;
+    TrackBarStepLine: TTrackBar;
     SpinEditPointCount: TSpinEdit;
     LabelStepSpacing: TLabel;
     LabelLineStep: TLabel;
@@ -225,7 +225,7 @@ end;
 
 function TMainForm.GetSpiralOptions: TSpiralOptions;
 begin
-   Result.CircleStep := TrackBarStepCircle.Position / 10 + 0.5;
+   Result.LineStep := TrackBarStepLine.Position / 10 + 0.5;
    Result.SpacingStep := TrackBarStepSpacing.Position / 1000;
    Result.DeltaSize  := TrackBarDeltaSize.Position / 10;
    Result.PointCount := SpinEditPointCount.Value;
@@ -296,7 +296,7 @@ var
 begin
    SpiralOptions := GetSpiralOptions;
    LabelSpacingStepDisplay.Caption := Format('%.3f', [SpiralOptions.SpacingStep]);
-   LabelLineStepDisplay.Caption := Format('%.2f', [SpiralOptions.CircleStep]);
+   LabelLineStepDisplay.Caption := Format('%.2f', [SpiralOptions.LineStep]);
    LabelDeltaSizeDisplay.Caption := Format('%.2f', [SpiralOptions.DeltaSize]);
 end;
 

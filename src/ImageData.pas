@@ -3,19 +3,9 @@ unit ImageData;
 interface
 
 uses
-   GdiPlus, Graphics;
+   Graphics;
 
 type
-  TPointArrayF = array of TGPPointF;
-
-  TSpiralOptions = packed record
-     CircleStep : Double;
-     SpacingStep : Double;
-     DeltaSize  : Double;
-     PointCount : Integer;
-     SmoothingMode : TGPSmoothingMode;
-  end;
-
   TRGBA = packed record
     B : Byte;
     G : Byte;

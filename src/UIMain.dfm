@@ -25,8 +25,6 @@ object MainForm: TMainForm
     Height = 68
     Align = alBottom
     TabOrder = 0
-    ExplicitTop = 557
-    ExplicitWidth = 974
     object LabelOut: TLabel
       Left = 90
       Top = 42
@@ -114,7 +112,7 @@ object MainForm: TMainForm
       TickStyle = tsNone
       OnChange = TrackBarChange
     end
-    object TrackBarStepCircle: TTrackBar
+    object TrackBarStepLine: TTrackBar
       Left = 375
       Top = 35
       Width = 150
@@ -178,8 +176,6 @@ object MainForm: TMainForm
     TabIndex = 0
     OnChange = TabControlChange
     OnMouseUp = TabControlMouseUp
-    ExplicitWidth = 974
-    ExplicitHeight = 557
     object ScrollBox: TScrollBox
       Left = 4
       Top = 24
@@ -192,13 +188,11 @@ object MainForm: TMainForm
       DoubleBuffered = True
       ParentDoubleBuffered = False
       TabOrder = 0
-      ExplicitWidth = 966
-      ExplicitHeight = 529
       object Image: TImage
         Left = 3
         Top = 3
-        Width = 500
-        Height = 500
+        Width = 414
+        Height = 590
         AutoSize = True
         Center = True
         OnMouseDown = ImageMouseDown
