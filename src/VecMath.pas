@@ -30,8 +30,16 @@ begin
 end;
 
 procedure NormalizeVec(var Vec : TGpPointF);
+var
+   Len : Double;
 begin
-   Vec := Vec * (1/VecLength(Vec));
+   Len := VecLength(Vec);
+   if Abs(Len) > 1e-6 then begin
+      Vec := Vec * (1/Len);
+   end else begin
+      Vec.X := NaN;
+      Vec.Y := NaN;
+   end;
 end;
 
 function VecDot(A, B : TGpPointF) :Double;

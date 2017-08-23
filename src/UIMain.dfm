@@ -20,14 +20,14 @@ object MainForm: TMainForm
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
-    Top = 742
+    Top = 712
     Width = 1313
-    Height = 68
+    Height = 98
     Align = alBottom
     TabOrder = 0
     object LabelOut: TLabel
-      Left = 90
-      Top = 42
+      Left = 171
+      Top = 68
       Width = 43
       Height = 13
       Caption = 'LabelOut'
@@ -46,16 +46,9 @@ object MainForm: TMainForm
       Height = 13
       Caption = 'Line Step'
     end
-    object LabelPointCount: TLabel
-      Left = 617
-      Top = 39
-      Width = 52
-      Height = 13
-      Caption = 'Max Points'
-    end
     object LabelDeltaSize: TLabel
-      Left = 617
-      Top = 10
+      Left = 312
+      Top = 68
       Width = 48
       Height = 13
       Caption = 'Max Delta'
@@ -75,8 +68,8 @@ object MainForm: TMainForm
       Caption = 'LineStep'
     end
     object LabelDeltaSizeDisplay: TLabel
-      Left = 840
-      Top = 10
+      Left = 527
+      Top = 68
       Width = 44
       Height = 13
       Caption = 'DeltaSize'
@@ -90,14 +83,14 @@ object MainForm: TMainForm
       TabOrder = 0
       OnClick = BtnLoadImgClick
     end
-    object ButtonGenerate: TButton
+    object ButtonGenRoundSpiral: TButton
       Left = 90
       Top = 6
       Width = 75
       Height = 25
-      Caption = 'Generate'
+      Caption = 'Round Spiral'
       TabOrder = 1
-      OnClick = ButtonGenerateClick
+      OnClick = ButtonGenRoundSpiralClick
     end
     object TrackBarStepSpacing: TTrackBar
       Left = 375
@@ -121,54 +114,53 @@ object MainForm: TMainForm
       Position = 5
       ShowSelRange = False
       TabOrder = 3
+      TickStyle = tsNone
       OnChange = TrackBarChange
     end
-    object SpinEditPointCount: TSpinEdit
-      Left = 688
-      Top = 36
-      Width = 89
-      Height = 22
-      Increment = 1000
-      MaxValue = 5000000
-      MinValue = 0
-      TabOrder = 4
-      Value = 300000
-    end
     object TrackBarDeltaSize: TTrackBar
-      Left = 688
-      Top = 6
+      Left = 375
+      Top = 65
       Width = 150
-      Height = 26
+      Height = 28
       Max = 200
       Position = 18
       ShowSelRange = False
-      TabOrder = 5
+      TabOrder = 4
+      TickStyle = tsNone
       OnChange = TrackBarChange
     end
     object ButtonSaveImage: TButton
       Left = 9
-      Top = 37
+      Top = 34
       Width = 75
       Height = 25
       Caption = 'Save Image'
-      TabOrder = 6
+      TabOrder = 5
       OnClick = ButtonSaveImageClick
     end
     object ComboBoxSmoothing: TComboBox
-      Left = 783
-      Top = 36
-      Width = 162
+      Left = 9
+      Top = 65
+      Width = 156
       Height = 21
       Style = csDropDownList
+      TabOrder = 6
+    end
+    object ButtonGenSquareSpiral: TButton
+      Left = 90
+      Top = 34
+      Width = 75
+      Height = 25
+      Caption = 'Square Spiral'
       TabOrder = 7
-      OnChange = ComboBoxSmoothingChange
+      OnClick = ButtonGenSquareSpiralClick
     end
   end
   object TabControl: TTabControl
     Left = 0
     Top = 0
     Width = 1313
-    Height = 742
+    Height = 712
     Align = alClient
     TabOrder = 1
     Tabs.Strings = (
@@ -176,11 +168,12 @@ object MainForm: TMainForm
     TabIndex = 0
     OnChange = TabControlChange
     OnMouseUp = TabControlMouseUp
+    ExplicitHeight = 742
     object ScrollBox: TScrollBox
       Left = 4
       Top = 24
       Width = 1305
-      Height = 714
+      Height = 684
       Align = alClient
       BevelEdges = []
       BevelInner = bvNone
@@ -188,6 +181,7 @@ object MainForm: TMainForm
       DoubleBuffered = True
       ParentDoubleBuffered = False
       TabOrder = 0
+      ExplicitHeight = 714
       object Image: TImage
         Left = 3
         Top = 3
