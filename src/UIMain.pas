@@ -37,6 +37,8 @@ type
     LabelDeltaSizeDisplay: TLabel;
     ComboBoxSmoothing: TComboBox;
     ButtonGenSquareSpiral: TButton;
+    ButtonGenSquareSpiralWobble: TButton;
+    ButtonGenRoundSpiralWobble: TButton;
     procedure BtnLoadImgClick(Sender: TObject);
     procedure ImageMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
@@ -56,6 +58,8 @@ type
     procedure FormShow(Sender: TObject);
     procedure TrackBarChange(Sender: TObject);
     procedure ButtonGenSquareSpiralClick(Sender: TObject);
+    procedure ButtonGenSquareSpiralWobbleClick(Sender: TObject);
+    procedure ButtonGenRoundSpiralWobbleClick(Sender: TObject);
   private
     { Private declarations }
     FImageData : TImageData;
@@ -184,6 +188,48 @@ begin
    Bitmap := TBitmap.Create;
    try
       DrawSquareSpiral(Bitmap, GetSpiralOptions, FImageData);
+      FGraphicList.Add(Bitmap);
+      TabControl.TabIndex := TabControl.Tabs.Add('Dest');
+      RefreshImage;
+   finally
+
+   end;
+
+   Time := Now - Time;
+   LabelOut.Caption := formatdatetime('ss.zzz', Time) + ' s';
+end;
+
+procedure TMainForm.ButtonGenRoundSpiralWobbleClick(Sender: TObject);
+var
+   Bitmap : TBitmap;
+   Time : TDateTime;
+begin
+   Time := Now;
+
+   Bitmap := TBitmap.Create;
+   try
+      DrawRoundSpiralWobble(Bitmap, GetSpiralOptions, FImageData);
+      FGraphicList.Add(Bitmap);
+      TabControl.TabIndex := TabControl.Tabs.Add('Dest');
+      RefreshImage;
+   finally
+
+   end;
+
+   Time := Now - Time;
+   LabelOut.Caption := formatdatetime('ss.zzz', Time) + ' s';
+end;
+
+procedure TMainForm.ButtonGenSquareSpiralWobbleClick(Sender: TObject);
+var
+   Bitmap : TBitmap;
+   Time : TDateTime;
+begin
+   Time := Now;
+
+   Bitmap := TBitmap.Create;
+   try
+      DrawSquareSpiralWobble(Bitmap, GetSpiralOptions, FImageData);
       FGraphicList.Add(Bitmap);
       TabControl.TabIndex := TabControl.Tabs.Add('Dest');
       RefreshImage;

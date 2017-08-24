@@ -18,6 +18,8 @@ type
 
 procedure DrawRoundSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
 procedure DrawSquareSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+procedure DrawSquareSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+procedure DrawRoundSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
 procedure DrawMonochrom(Bitmap : TBitmap; ImageData : TImageData);
 
 
@@ -81,7 +83,6 @@ var
 
    TmpPnts : TPointArrayF;
    i : Integer;
-//   FirstLoop : Boolean;
 begin
    Index := 0;
    Step := 0;
@@ -89,33 +90,24 @@ begin
 
    Dir := TGPPointF.Create(1, 0);;
    Matrix := TGPMatrix.Create;
-   Matrix.Rotate(90);
+   Matrix.Rotate(-90);
 
    Pnt := TGPPointF.Create(0, 0);
-//   FirstLoop := True;
    SetLength(Spiral, 5000);
    while Step*Options.SpacingStep < Size do begin
-//      if Index >= Length(Spiral) then begin
-//         SetLength(Spiral, Length(Spiral)*2);
-//      end;
 
       LastPnt := Pnt;
       Pnt := LastPnt + (Dir * (Step*Options.SpacingStep));
 
-//      if not FirstLoop then begin
-         SetLength(TmpPnts, 500);
-         InterpolateBetweenPoints(LastPnt, Pnt, Options.LineStep, TmpPnts);
-         for i := Low(TmpPnts) to High(TmpPnts) do begin
-            if Index >= Length(Spiral) then begin
-               SetLength(Spiral, Length(Spiral)*2);
-            end;
-            Spiral[Index] := TmpPnts[i] + Center;
-            Inc(Index);
+      SetLength(TmpPnts, 500);
+      InterpolateBetweenPoints(LastPnt, Pnt, Options.LineStep, TmpPnts);
+      for i := Low(TmpPnts) to High(TmpPnts) do begin
+         if Index >= Length(Spiral) then begin
+            SetLength(Spiral, Length(Spiral)*2);
          end;
-//      end else begin
-//         Spiral[Index] := Pnt + Center;
-//         Inc(Index);
-//      end;
+         Spiral[Index] := TmpPnts[i] + Center;
+         Inc(Index);
+      end;
 
       if FlipFlop then begin
          Inc(Step);
@@ -123,7 +115,6 @@ begin
 
       Matrix.TransformPoint(Dir);
       FlipFlop := not FlipFlop;
-//      FirstLoop := False;
    end;
    SetLength(Spiral, Index);
 end;
@@ -234,7 +225,7 @@ begin
       CalcRoundSpiralShape(ImageData, Options, SpiralPoints);
       ShapeToZigZag(SpiralPoints, ImageData, Options.DeltaSize);
 
-      Pen := TGPPen.Create(TGPColor.Create(30, 30, 30), 1);
+      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
       Img.DrawLines(Pen, SpiralPoints);
    end;
 end;
@@ -255,8 +246,80 @@ begin
       CalcSquareSpiralShape(ImageData, Options, SpiralPoints);
       ShapeToZigZag(SpiralPoints, ImageData, Options.DeltaSize);
 
-      Pen := TGPPen.Create(TGPColor.Create(30, 30, 30), 1);
+      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
       Img.DrawLines(Pen, SpiralPoints);
+   end;
+end;
+
+procedure DrawRoundSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+var
+   Img : IGPGraphics;
+   Pen : IGPPen;
+   SpiralPoints : TPointArrayF;
+   i : Integer;
+   Brightness : Double;
+   X, Y : Integer;
+   R : TRect;
+begin
+   if Assigned(Bitmap) and Assigned(ImageData) then begin
+      Bitmap.PixelFormat := pf32bit;
+      Bitmap.SetSize(ImageData.Width, ImageData.Height);
+
+      Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
+      Img.SmoothingMode := Options.SmoothingMode;
+
+      CalcRoundSpiralShape(ImageData, Options, SpiralPoints);
+
+      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
+      Pen.SetLineCap(LineCapRound, LineCapRound, DashCapRound);
+      R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
+      for i := Low(SpiralPoints)+1 to High(SpiralPoints) do begin
+         X := Round(SpiralPoints[i].X);
+         Y := Round(SpiralPoints[i].Y);
+         if R.Contains(Point(X, Y)) then begin
+            Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
+         end else begin
+            Brightness := 0.001;
+         end;
+         Pen.Width := Brightness*Options.DeltaSize;
+         Img.DrawLine(Pen, SpiralPoints[i-1], SpiralPoints[i]);
+      end;
+   end;
+end;
+
+procedure DrawSquareSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+var
+   Img : IGPGraphics;
+   Pen : IGPPen;
+   SpiralPoints : TPointArrayF;
+   i : Integer;
+   Brightness : Double;
+   X, Y : Integer;
+   R : TRect;
+begin
+   if Assigned(Bitmap) and Assigned(ImageData) then begin
+      Bitmap.PixelFormat := pf32bit;
+      Bitmap.SetSize(ImageData.Width, ImageData.Height);
+
+      Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
+      Img.SmoothingMode := Options.SmoothingMode;
+
+      CalcSquareSpiralShape(ImageData, Options, SpiralPoints);
+
+      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
+      Pen.SetLineCap(LineCapRound, LineCapRound, DashCapRound);
+      R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
+      for i := Low(SpiralPoints)+1 to High(SpiralPoints) do begin
+         X := Round(SpiralPoints[i].X);
+         Y := Round(SpiralPoints[i].Y);
+         if R.Contains(Point(X, Y)) then begin
+            Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
+         end else begin
+            Brightness := 0.001;
+         end;
+         Pen.Width := Brightness*Options.DeltaSize;
+         Img.DrawLine(Pen, SpiralPoints[i-1], SpiralPoints[i]);
+      end;
    end;
 end;
 

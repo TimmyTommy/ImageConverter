@@ -155,6 +155,24 @@ object MainForm: TMainForm
       TabOrder = 7
       OnClick = ButtonGenSquareSpiralClick
     end
+    object ButtonGenSquareSpiralWobble: TButton
+      Left = 171
+      Top = 34
+      Width = 110
+      Height = 25
+      Caption = 'Square Spiral Wobble'
+      TabOrder = 8
+      OnClick = ButtonGenSquareSpiralWobbleClick
+    end
+    object ButtonGenRoundSpiralWobble: TButton
+      Left = 171
+      Top = 6
+      Width = 110
+      Height = 25
+      Caption = 'Round Spiral Wobble'
+      TabOrder = 9
+      OnClick = ButtonGenRoundSpiralWobbleClick
+    end
   end
   object TabControl: TTabControl
     Left = 0
@@ -168,7 +186,6 @@ object MainForm: TMainForm
     TabIndex = 0
     OnChange = TabControlChange
     OnMouseUp = TabControlMouseUp
-    ExplicitHeight = 742
     object ScrollBox: TScrollBox
       Left = 4
       Top = 24
@@ -181,12 +198,11 @@ object MainForm: TMainForm
       DoubleBuffered = True
       ParentDoubleBuffered = False
       TabOrder = 0
-      ExplicitHeight = 714
       object Image: TImage
         Left = 3
         Top = 3
-        Width = 414
-        Height = 590
+        Width = 534
+        Height = 510
         AutoSize = True
         Center = True
         OnMouseDown = ImageMouseDown
