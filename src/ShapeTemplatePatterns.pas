@@ -12,19 +12,24 @@ type
   TSpiralOptions = packed record
      LineStep : Double;
      SpacingStep : Double;
-     DeltaSize  : Double;
+     Amplitude  : Double;
      SmoothingMode : TGPSmoothingMode;
+     LineCap : TGPLineCap;
+     DashCap : TGPDashCap;
   end;
 
-procedure DrawRoundSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
-procedure DrawSquareSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
-procedure DrawSquareSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
-procedure DrawRoundSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+  TSpiralShapeMethod = procedure(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF);
+  TDrawStyleMethod = procedure(const Img : IGPGraphics; const ImageData : TImageData; const Options : TSpiralOptions; var ShapePoints : TPointArrayF);
+
+procedure DrawSpiral(Bitmap : TBitmap; const Options : TSpiralOptions;
+   const ImageData : TImageData;
+   SpiralShapeMethod : TSpiralShapeMethod;
+   DrawStyleMethod : TDrawStyleMethod);
 procedure DrawMonochrom(Bitmap : TBitmap; ImageData : TImageData);
 
+procedure ShapeToZigZag(var Shape, ZigZagOut : TPointArrayF; const ImageData : TImageData; const Amplitude : Double);
+procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Amplitude : Double);
 
-procedure ShapeToZigZag(var Shape : TPointArrayF; const ImageData : TImageData; const Delta : Double);
-procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Delta : Double);
 procedure CalcRoundSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
 procedure CalcRoundSpiralShape(const Diameter : Double; const Center : TGPPointF;
    const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
@@ -32,6 +37,9 @@ procedure CalcRoundSpiralShape(const Diameter : Double; const Center : TGPPointF
 procedure CalcSquareSpiralShape(const ImageData : TImageData; const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
 procedure CalcSquareSpiralShape(const Size : Double; const Center : TGPPointF;
    const Options : TSpiralOptions; var Spiral : TPointArrayF); overload;
+
+procedure DrawWobble(const Img : IGPGraphics; const ImageData : TImageData; const Options : TSpiralOptions; var ShapePoints : TPointArrayF);
+procedure DrawZigZag(const Img : IGPGraphics; const ImageData : TImageData; const Options : TSpiralOptions; var ShapePoints : TPointArrayF);
 
 implementation
 
@@ -168,159 +176,100 @@ begin
    SetLength(Spiral, Index);
 end;
 
-procedure ShapeToZigZag(var Shape : TPointArrayF; const ImageData : TImageData; const Delta : Double);
+procedure ShapeToZigZag(var Shape, ZigZagOut : TPointArrayF; const ImageData : TImageData; const Amplitude : Double);
 var
-   ZigZagOut : TPointArrayF;
    i : Integer;
    FlipFlop : Integer;
    Normal : TGPPointF;
    R : TRect;
    Brightness : Double;
-   X, Y : Integer;
+   Pnt : TPoint;
 begin
+   R := Rect(0, 0, ImageData.Width, ImageData.Height);
    FlipFlop := 1;
+
    SetLength(ZigZagOut, Length(Shape));
    ZigZagOut[0] := Shape[0];
    ZigZagOut[High(Shape)] := Shape[High(Shape)];
-   R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
    for i := Low(Shape)+1 to High(Shape)-1 do begin
-      X := Round(Shape[i].X);
-      Y := Round(Shape[i].Y);
-      if R.Contains(Point(X, Y)) then begin
-         Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
+      Normal := CalcAngleBisector(Shape[i-1], Shape[i], Shape[i+1]);
+      Pnt := Point(Round(Shape[i].X), Round(Shape[i].Y));
+      if R.Contains(Pnt) then begin
+         Brightness := (255 - ImageData.BrightnessGrid[Pnt.X, Pnt.Y])/255
       end else begin
          Brightness := 0;
       end;
-
-      Normal := CalcAngleBisector(Shape[i-1], Shape[i], Shape[i+1]);
-      Normal := Normal * (Delta * Brightness * FlipFlop);
+      ZigZagOut[i] := Shape[i] + Normal * (Amplitude * Brightness * FlipFlop);
       FlipFlop := -FlipFlop;
-      ZigZagOut[i] := Shape[i] + Normal;
    end;
-   Shape := ZigZagOut;
 end;
 
-procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Delta : Double);
+procedure ShapesToZigZag(var Shapes : TPointArrayArrayF; const ImageData : TImageData; const Amplitude : Double);
 var
    i : Integer;
+   ZigZagOut : TPointArrayF;
 begin
    for i := Low(Shapes) to High(Shapes) do begin
-      ShapeToZigZag(Shapes[i], ImageData, Delta);
+      ShapeToZigZag(Shapes[i], ZigZagOut, ImageData, Amplitude);
+      Shapes[i] := ZigZagOut;
    end;
 end;
 
-procedure DrawRoundSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+procedure DrawSpiral(Bitmap : TBitmap; const Options : TSpiralOptions;
+   const ImageData : TImageData;
+   SpiralShapeMethod : TSpiralShapeMethod;
+   DrawStyleMethod : TDrawStyleMethod);
 var
    Img : IGPGraphics;
-   Pen : IGPPen;
    SpiralPoints : TPointArrayF;
 begin
    if Assigned(Bitmap) and Assigned(ImageData) then begin
+      SpiralShapeMethod(ImageData, Options, SpiralPoints);
+
       Bitmap.PixelFormat := pf32bit;
       Bitmap.SetSize(ImageData.Width, ImageData.Height);
-
       Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
       Img.SmoothingMode := Options.SmoothingMode;
 
-      CalcRoundSpiralShape(ImageData, Options, SpiralPoints);
-      ShapeToZigZag(SpiralPoints, ImageData, Options.DeltaSize);
-
-      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
-      Img.DrawLines(Pen, SpiralPoints);
+      DrawStyleMethod(Img, ImageData, Options, SpiralPoints);
    end;
 end;
 
-procedure DrawSquareSpiral(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+procedure DrawWobble(const Img : IGPGraphics; const ImageData : TImageData; const Options : TSpiralOptions; var ShapePoints : TPointArrayF);
 var
-   Img : IGPGraphics;
    Pen : IGPPen;
-   SpiralPoints : TPointArrayF;
-begin
-   if Assigned(Bitmap) and Assigned(ImageData) then begin
-      Bitmap.PixelFormat := pf32bit;
-      Bitmap.SetSize(ImageData.Width, ImageData.Height);
-
-      Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
-      Img.SmoothingMode := Options.SmoothingMode;
-
-      CalcSquareSpiralShape(ImageData, Options, SpiralPoints);
-      ShapeToZigZag(SpiralPoints, ImageData, Options.DeltaSize);
-
-      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
-      Img.DrawLines(Pen, SpiralPoints);
-   end;
-end;
-
-procedure DrawRoundSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
-var
-   Img : IGPGraphics;
-   Pen : IGPPen;
-   SpiralPoints : TPointArrayF;
    i : Integer;
    Brightness : Double;
-   X, Y : Integer;
+   Pnt : TPoint;
+   CenterPnt : TGPPointF;
    R : TRect;
 begin
-   if Assigned(Bitmap) and Assigned(ImageData) then begin
-      Bitmap.PixelFormat := pf32bit;
-      Bitmap.SetSize(ImageData.Width, ImageData.Height);
-
-      Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
-      Img.SmoothingMode := Options.SmoothingMode;
-
-      CalcRoundSpiralShape(ImageData, Options, SpiralPoints);
-
-      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
-      Pen.SetLineCap(LineCapRound, LineCapRound, DashCapRound);
-      R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
-      for i := Low(SpiralPoints)+1 to High(SpiralPoints) do begin
-         X := Round(SpiralPoints[i].X);
-         Y := Round(SpiralPoints[i].Y);
-         if R.Contains(Point(X, Y)) then begin
-            Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
-         end else begin
-            Brightness := 0.001;
-         end;
-         Pen.Width := Brightness*Options.DeltaSize;
-         Img.DrawLine(Pen, SpiralPoints[i-1], SpiralPoints[i]);
+   Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
+   Pen.SetLineCap(Options.LineCap, Options.LineCap, Options.DashCap);
+   R := Rect(0, 0, ImageData.Width, ImageData.Height);
+   for i := Low(ShapePoints)+1 to High(ShapePoints) do begin
+      CenterPnt := (ShapePoints[i] + ShapePoints[i-1]) * 0.5;
+      Pnt := Point(Round(CenterPnt.X), Round(CenterPnt.Y));
+      if R.Contains(Pnt) then begin
+         Brightness := (255 - ImageData.BrightnessGrid[Pnt.X, Pnt.Y])/255
+      end else begin
+         Brightness := 0.001;
       end;
+      Pen.Width := Brightness * Options.Amplitude * 2;
+      Img.DrawLine(Pen, ShapePoints[i-1], ShapePoints[i]);
    end;
 end;
 
-procedure DrawSquareSpiralWobble(Bitmap : TBitmap; const Options : TSpiralOptions; const ImageData : TImageData);
+procedure DrawZigZag(const Img : IGPGraphics; const ImageData : TImageData; const Options : TSpiralOptions; var ShapePoints : TPointArrayF);
 var
-   Img : IGPGraphics;
    Pen : IGPPen;
-   SpiralPoints : TPointArrayF;
-   i : Integer;
-   Brightness : Double;
-   X, Y : Integer;
-   R : TRect;
+   ShapeZigZag : TPointArrayF;
 begin
-   if Assigned(Bitmap) and Assigned(ImageData) then begin
-      Bitmap.PixelFormat := pf32bit;
-      Bitmap.SetSize(ImageData.Width, ImageData.Height);
+   ShapeToZigZag(ShapePoints, ShapeZigZag, ImageData, Options.Amplitude);
 
-      Img := TGPGraphics.Create(Bitmap.Canvas.Handle);
-      Img.SmoothingMode := Options.SmoothingMode;
-
-      CalcSquareSpiralShape(ImageData, Options, SpiralPoints);
-
-      Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
-      Pen.SetLineCap(LineCapRound, LineCapRound, DashCapRound);
-      R := Rect(0, 0, Length(ImageData.BrightnessGrid[0]), Length(ImageData.BrightnessGrid));
-      for i := Low(SpiralPoints)+1 to High(SpiralPoints) do begin
-         X := Round(SpiralPoints[i].X);
-         Y := Round(SpiralPoints[i].Y);
-         if R.Contains(Point(X, Y)) then begin
-            Brightness := (255 - ImageData.BrightnessGrid[Y, X])/255;
-         end else begin
-            Brightness := 0.001;
-         end;
-         Pen.Width := Brightness*Options.DeltaSize;
-         Img.DrawLine(Pen, SpiralPoints[i-1], SpiralPoints[i]);
-      end;
-   end;
+   Pen := TGPPen.Create(TGPColor.Create(0, 0, 0), 1);
+   Pen.SetLineCap(Options.LineCap, Options.LineCap, Options.DashCap);
+   Img.DrawLines(Pen, ShapeZigZag);
 end;
 
 procedure DrawMonochrom(Bitmap : TBitmap; ImageData : TImageData);

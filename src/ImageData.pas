@@ -49,11 +49,11 @@ procedure TImageData.LoadBrightnessGrid;
 var
    x, y : Integer;
 begin
-   SetLength(FBrightnessGrid, FHeight);
-   for y := 0 to FHeight - 1 do begin
-      SetLength(FBrightnessGrid[y], FWidth);
-      for x := 0 to FWidth - 1 do begin
-         FBrightnessGrid[y, x] := GetBrightness(FColorGrid[y, x]);
+   SetLength(FBrightnessGrid, FWidth);
+   for x := 0 to FWidth - 1 do begin
+      SetLength(FBrightnessGrid[x], FHeight);
+      for y := 0 to FHeight - 1 do begin
+         FBrightnessGrid[x, y] := GetBrightness(FColorGrid[x, y]);
       end;
    end;
 end;
@@ -69,12 +69,15 @@ begin
    try
       Bitmap.PixelFormat := pf32bit;
 
-      SetLength(FColorGrid, FHeight);
+      SetLength(FColorGrid, FWidth);
+      for y := 0 to FWidth - 1 do begin
+         SetLength(FColorGrid[y], FHeight);
+      end;
+
       for y := 0 to FHeight - 1 do begin
          Line := Bitmap.ScanLine[y];
-         SetLength(FColorGrid[y], FWidth);
          for x := 0 to FWidth - 1 do begin
-            FColorGrid[y, x] := Line[x];
+            FColorGrid[x, y] := Line[x];
          end;
       end;
    finally

@@ -166,7 +166,7 @@ begin
 
    Bitmap := TBitmap.Create;
    try
-      DrawRoundSpiral(Bitmap, GetSpiralOptions, FImageData);
+      DrawSpiral(Bitmap, GetSpiralOptions, FImageData, CalcRoundSpiralShape, DrawZigZag);
       FGraphicList.Add(Bitmap);
       TabControl.TabIndex := TabControl.Tabs.Add('Dest');
       RefreshImage;
@@ -187,7 +187,7 @@ begin
 
    Bitmap := TBitmap.Create;
    try
-      DrawSquareSpiral(Bitmap, GetSpiralOptions, FImageData);
+      DrawSpiral(Bitmap, GetSpiralOptions, FImageData, CalcSquareSpiralShape, DrawZigZag);
       FGraphicList.Add(Bitmap);
       TabControl.TabIndex := TabControl.Tabs.Add('Dest');
       RefreshImage;
@@ -208,7 +208,7 @@ begin
 
    Bitmap := TBitmap.Create;
    try
-      DrawRoundSpiralWobble(Bitmap, GetSpiralOptions, FImageData);
+      DrawSpiral(Bitmap, GetSpiralOptions, FImageData, CalcRoundSpiralShape, DrawWobble);
       FGraphicList.Add(Bitmap);
       TabControl.TabIndex := TabControl.Tabs.Add('Dest');
       RefreshImage;
@@ -229,7 +229,7 @@ begin
 
    Bitmap := TBitmap.Create;
    try
-      DrawSquareSpiralWobble(Bitmap, GetSpiralOptions, FImageData);
+      DrawSpiral(Bitmap, GetSpiralOptions, FImageData, CalcSquareSpiralShape, DrawWobble);
       FGraphicList.Add(Bitmap);
       TabControl.TabIndex := TabControl.Tabs.Add('Dest');
       RefreshImage;
@@ -288,8 +288,10 @@ function TMainForm.GetSpiralOptions: TSpiralOptions;
 begin
    Result.LineStep := TrackBarStepLine.Position / 10 + 0.5;
    Result.SpacingStep := TrackBarStepSpacing.Position / 1000;
-   Result.DeltaSize  := TrackBarDeltaSize.Position / 10;
+   Result.Amplitude  := TrackBarDeltaSize.Position / 10;
    Result.SmoothingMode := TGPSmoothingMode(ComboBoxSmoothing.Items.Objects[ComboBoxSmoothing.ItemIndex]);
+   Result.LineCap := LineCapRound;
+   Result.DashCap := DashCapRound;
 end;
 
 procedure TMainForm.ImageMouseDown(Sender: TObject; Button: TMouseButton;
@@ -357,7 +359,7 @@ begin
    SpiralOptions := GetSpiralOptions;
    LabelSpacingStepDisplay.Caption := Format('%.3f', [SpiralOptions.SpacingStep]);
    LabelLineStepDisplay.Caption := Format('%.2f', [SpiralOptions.LineStep]);
-   LabelDeltaSizeDisplay.Caption := Format('%.2f', [SpiralOptions.DeltaSize]);
+   LabelDeltaSizeDisplay.Caption := Format('%.2f', [SpiralOptions.Amplitude]);
 end;
 
 procedure TMainForm.TabControlChange(Sender: TObject);
